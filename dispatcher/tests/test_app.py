@@ -29,6 +29,34 @@ def test_root_returns_metadata(client):
     assert body["service"] == "jobs-actions-dispatcher"
     assert "supported_labels" in body
     assert "hf-jobs-cpu-basic" in body["supported_labels"]
+    assert body["configured"] is True
+
+
+def test_unconfigured_mode_keeps_landing_page_alive(monkeypatch):
+    """If env is missing, the Space should still serve / and /healthz so the
+    operator can point a webhook at it during setup. Webhook POSTs 503."""
+    from fastapi.testclient import TestClient
+
+    from dispatcher import app as app_mod
+
+    monkeypatch.delenv("GH_APP_ID", raising=False)
+    monkeypatch.delenv("GH_APP_PRIVATE_KEY", raising=False)
+
+    # Pass settings=None so the lifespan goes through the env path and fails.
+    app = app_mod.make_app(None)
+    with TestClient(app) as c:
+        r = c.get("/")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["configured"] is False
+        assert "next_steps" in body
+
+        h = c.get("/healthz")
+        assert h.status_code == 200
+        assert h.json()["status"] == "needs-config"
+
+        w = c.post("/webhook", content=b"{}")
+        assert w.status_code == 503
 
 
 def test_healthz(client):

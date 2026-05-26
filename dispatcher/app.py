@@ -46,11 +46,23 @@ def make_app(settings: Settings | None = None) -> FastAPI:
     """Build the FastAPI app. Settings are loaded from env if not passed.
 
     Factored out so tests can pass a synthetic Settings + injected clients.
+
+    If env vars are missing at boot, the app still starts and serves a
+    "needs configuration" response on every endpoint. This keeps a freshly
+    deployed Space reachable while the operator sets secrets.
     """
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        s = settings or Settings.from_env()
+        try:
+            s = settings or Settings.from_env()
+        except RuntimeError as e:
+            logging.basicConfig(level="INFO")
+            log.warning("dispatcher starting in UNCONFIGURED mode: %s", e)
+            app.state.deps = {"error": str(e)}
+            yield
+            return
+
         logging.basicConfig(
             level=s.log_level,
             format="%(asctime)s %(levelname)s %(name)s %(message)s",
@@ -72,21 +84,35 @@ def make_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="jobs-actions dispatcher", version=__version__, lifespan=lifespan)
 
+    def _configured(request: Request) -> bool:
+        return "settings" in _state(request)
+
     @app.get("/")
-    async def root() -> dict[str, Any]:
-        return {
+    async def root(request: Request) -> dict[str, Any]:
+        configured = _configured(request)
+        body: dict[str, Any] = {
             "service": "jobs-actions-dispatcher",
             "version": __version__,
+            "configured": configured,
             "supported_labels": supported_labels(),
             "docs": "https://github.com/abidlabs/jobs-actions",
         }
+        if not configured:
+            body["next_steps"] = (
+                "Set GH_APP_ID, GH_APP_PRIVATE_KEY, GH_WEBHOOK_SECRET, "
+                "HF_TOKEN, HF_NAMESPACE as Space secrets and restart."
+            )
+            body["error"] = _state(request).get("error")
+        return body
 
     @app.get("/healthz")
-    async def healthz() -> dict[str, str]:
-        return {"status": "ok"}
+    async def healthz(request: Request) -> dict[str, Any]:
+        return {"status": "ok" if _configured(request) else "needs-config"}
 
     @app.post("/webhook")
     async def webhook(request: Request) -> dict[str, Any]:
+        if not _configured(request):
+            raise HTTPException(status_code=503, detail="dispatcher not configured")
         deps = _state(request)
         s: Settings = deps["settings"]
         gh: GitHubAppClient = deps["gh"]
