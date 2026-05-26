@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Create jobs-actions GitHub App</title>
+<style>
+  body { font: 14px/1.5 -apple-system, system-ui, sans-serif; max-width: 640px; margin: 4em auto; padding: 0 1em; color: #222; }
+  h1 { font-size: 1.4em; }
+  label { display: block; margin: 1em 0 0.3em; font-weight: 600; }
+  input[type=text] { width: 100%; padding: 0.5em; font: inherit; box-sizing: border-box; }
+  button { margin-top: 1.5em; padding: 0.7em 1.4em; background: #2da44e; color: white; border: 0; border-radius: 6px; cursor: pointer; font: inherit; }
+  small { color: #666; }
+  code { background: #f6f8fa; padding: 1px 5px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<h1>Create the <code>jobs-actions</code> GitHub App</h1>
+<p>
+  This form uses GitHub's <a href="https://docs.github.com/en/apps/sharing-github-apps/registering-a-github-app-from-a-manifest">App-from-manifest flow</a>.
+  Fill in the two fields and submit; GitHub will redirect you to the new App's settings page where you can grab the App ID, private key, and webhook secret.
+</p>
+
+<form id="f" method="post">
+  <label for="org">GitHub user or org <small>(blank = your personal account)</small></label>
+  <input id="org" type="text" name="org" placeholder="my-org">
+
+  <label for="space">HF Space dispatcher URL</label>
+  <input id="space" type="text" required
+         placeholder="https://abidlabs-jobs-actions-dispatcher.hf.space"
+         pattern="https://.+">
+
+  <input type="hidden" name="manifest">
+  <button type="submit">Create App on GitHub →</button>
+</form>
+
+<script>
+const baseManifest = {
+  "name": "jobs-actions",
+  "description": "Run GitHub Actions workflows on Hugging Face Jobs.",
+  "url": "https://github.com/abidlabs/jobs-actions",
+  "hook_attributes": { "url": "", "active": true },
+  "redirect_url": "https://github.com/abidlabs/jobs-actions",
+  "public": false,
+  "default_permissions": {
+    "actions": "write",
+    "administration": "write",
+    "metadata": "read"
+  },
+  "default_events": ["workflow_job"]
+};
+
+document.getElementById("f").addEventListener("submit", e => {
+  e.preventDefault();
+  const org = document.getElementById("org").value.trim();
+  const space = document.getElementById("space").value.trim().replace(/\/+$/, "");
+  const manifest = { ...baseManifest };
+  manifest.hook_attributes = { url: space + "/webhook", active: true };
+
+  // GitHub wants the manifest as a JSON-string form field POSTed to a known URL.
+  const action = org
+    ? `https://github.com/organizations/${encodeURIComponent(org)}/settings/apps/new`
+    : `https://github.com/settings/apps/new`;
+  const form = e.target;
+  form.action = action;
+  form.querySelector('input[name=manifest]').value = JSON.stringify(manifest);
+  form.submit();
+});
+</script>
+</body>
+</html>

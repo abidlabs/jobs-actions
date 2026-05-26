@@ -1,0 +1,19 @@
+{
+  "name": "jobs-actions",
+  "description": "Run GitHub Actions workflows on Hugging Face Jobs. See https://github.com/abidlabs/jobs-actions",
+  "url": "https://github.com/abidlabs/jobs-actions",
+  "hook_attributes": {
+    "url": "REPLACE_WITH_SPACE_URL/webhook",
+    "active": true
+  },
+  "redirect_url": "https://github.com/abidlabs/jobs-actions",
+  "public": false,
+  "default_permissions": {
+    "actions": "write",
+    "administration": "write",
+    "metadata": "read"
+  },
+  "default_events": [
+    "workflow_job"
+  ]
+}

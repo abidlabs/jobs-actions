@@ -1,0 +1,96 @@
+"""Thin wrapper around `huggingface_hub.HfApi` for our dispatch flow.
+
+We isolate HF Jobs interaction here so it can be mocked cleanly in tests.
+"""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+
+from huggingface_hub import HfApi
+
+from .flavors import LABEL_TO_FLAVOR, is_gpu_flavor
+
+log = logging.getLogger(__name__)
+
+
+@dataclass
+class DispatchResult:
+    job_id: str
+    flavor: str
+    image: str
+
+
+class HFJobsClient:
+    def __init__(
+        self,
+        *,
+        token: str,
+        namespace: str,
+        runner_image_cpu: str,
+        runner_image_gpu: str,
+        timeout: str = "1h",
+    ) -> None:
+        self._api = HfApi(token=token)
+        self._namespace = namespace
+        self._image_cpu = runner_image_cpu
+        self._image_gpu = runner_image_gpu
+        self._timeout = timeout
+
+    def dispatch(
+        self,
+        *,
+        label: str,
+        repo: str,
+        runner_token: str,
+        runner_name: str,
+    ) -> DispatchResult:
+        flavor = LABEL_TO_FLAVOR[label]
+        image = self._image_gpu if is_gpu_flavor(flavor) else self._image_cpu
+
+        env = {
+            "GH_REPO": repo,
+            "RUNNER_LABELS": label,
+            "RUNNER_NAME": runner_name,
+        }
+        # RUNNER_TOKEN is sensitive — pass via `secrets` so it's not echoed
+        # in HF Jobs logs or the inspect_job output.
+        secrets = {"RUNNER_TOKEN": runner_token}
+
+        job = self._api.run_job(
+            image=image,
+            command=["/entrypoint.sh"],
+            env=env,
+            secrets=secrets,
+            flavor=flavor,
+            timeout=self._timeout,
+            namespace=self._namespace,
+            labels={
+                "managed-by": "jobs-actions",
+                "gh-repo": repo,
+                "gh-label": label,
+            },
+        )
+        log.info(
+            "dispatched HF Job",
+            extra={
+                "hf_job_id": job.id,
+                "flavor": flavor,
+                "repo": repo,
+                "label": label,
+                "namespace": self._namespace,
+            },
+        )
+        return DispatchResult(job_id=job.id, flavor=flavor, image=image)
+
+    def cancel(self, job_id: str) -> None:
+        try:
+            self._api.cancel_job(job_id=job_id, namespace=self._namespace)
+            log.info("cancelled HF Job", extra={"hf_job_id": job_id})
+        except Exception as e:
+            # Job might already be finished — that's fine.
+            log.warning(
+                "cancel failed (job may already be done)",
+                extra={"hf_job_id": job_id, "error": str(e)},
+            )
