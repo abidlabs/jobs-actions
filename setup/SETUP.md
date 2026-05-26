@@ -8,7 +8,7 @@ Estimated time: **~5 minutes**.
 
 - An HF account or org with billing enabled (HF Jobs is paid compute).
 - A GitHub user or org where you can create Apps.
-- A pinned runner image. The default `ghcr.io/abidlabs/jobs-actions-runner:latest` works out of the box, or you can fork and publish your own (see `.github/workflows/publish-runner-image.yml`).
+- *(Optional)* a pinned runner image. The dispatcher ships a runtime-install fallback (`ubuntu:22.04` + `apt-get` + runner download) so you can get going with **no image hosting**. For ~30s faster cold starts, fork this repo and let `.github/workflows/publish-runner-image.yml` build a prebuilt image into your GHCR namespace.
 
 ## 1. Deploy the dispatcher to an HF Space
 

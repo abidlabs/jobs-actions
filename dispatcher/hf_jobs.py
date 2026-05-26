@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from huggingface_hub import HfApi
 
 from .flavors import LABEL_TO_FLAVOR, is_gpu_flavor
+from .runner_bootstrap import BOOTSTRAP
 
 log = logging.getLogger(__name__)
 
@@ -58,9 +59,19 @@ class HFJobsClient:
         # in HF Jobs logs or the inspect_job output.
         secrets = {"RUNNER_TOKEN": runner_token}
 
+        # If the operator pointed us at a prebuilt runner image we trust it has
+        # `/entrypoint.sh` (see runner/Dockerfile). Otherwise default to a
+        # public base image + inline bootstrap that installs the GHA runner
+        # at job startup — no image hosting required.
+        is_prebuilt = "jobs-actions-runner" in image
+        if is_prebuilt:
+            command = ["/entrypoint.sh"]
+        else:
+            command = ["bash", "-c", BOOTSTRAP]
+
         job = self._api.run_job(
             image=image,
-            command=["/entrypoint.sh"],
+            command=command,
             env=env,
             secrets=secrets,
             flavor=flavor,

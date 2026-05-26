@@ -31,7 +31,7 @@ PR push
   → GitHub fires `workflow_job.queued` webhook
   → Dispatcher (HF Space) receives it, sees `runs-on: hf-jobs-*` label
   → Mints a one-shot GitHub Actions runner registration token
-  → Launches an HF Job with the runner image + that token
+  → Launches an HF Job with a base image (or your prebuilt runner image)
   → Runner registers ephemerally, GitHub dispatches the job to it
   → Runner exits after one job, container terminates
 ```
@@ -39,7 +39,7 @@ PR push
 Three pieces:
 
 - **`dispatcher/`** — FastAPI service that handles GitHub webhooks and dispatches HF Jobs. Deploys to an HF Space.
-- **`runner/`** — Docker images (CPU + GPU) with the GitHub Actions runner binary baked in.
+- **`runner/`** — *Optional* prebuilt Docker images (CPU + GPU) with the GitHub Actions runner binary baked in. Out of the box the dispatcher uses `ubuntu:22.04` / `nvidia/cuda:...` + a runtime install, so you don't need to host an image to get started.
 - **`setup/`** — GitHub App manifest and setup walkthrough.
 
 ## Supported labels

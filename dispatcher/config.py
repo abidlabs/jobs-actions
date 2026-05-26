@@ -58,13 +58,14 @@ class Settings:
             webhook_secret=_required("GH_WEBHOOK_SECRET"),
             hf_token=_required("HF_TOKEN"),
             hf_namespace=_required("HF_NAMESPACE"),
-            runner_image_cpu=_optional(
-                "RUNNER_IMAGE_CPU",
-                "ghcr.io/abidlabs/jobs-actions-runner:latest",
-            ),
+            # Default to public base images + runtime install. Operators who
+            # care about cold-start latency can point these at prebuilt
+            # ghcr.io/<their-org>/jobs-actions-runner[:tag] images instead;
+            # see runner/Dockerfile{,.gpu}.
+            runner_image_cpu=_optional("RUNNER_IMAGE_CPU", "ubuntu:22.04"),
             runner_image_gpu=_optional(
                 "RUNNER_IMAGE_GPU",
-                "ghcr.io/abidlabs/jobs-actions-runner-gpu:latest",
+                "nvidia/cuda:12.4.0-runtime-ubuntu22.04",
             ),
             default_timeout=_optional("JOB_TIMEOUT", "1h"),
             log_level=_optional("LOG_LEVEL", "INFO"),

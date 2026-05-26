@@ -45,8 +45,8 @@ def settings(rsa_keypair) -> Settings:
         webhook_secret="s3cret",
         hf_token="hf_test",
         hf_namespace="testuser",
-        runner_image_cpu="ghcr.io/test/runner:cpu",
-        runner_image_gpu="ghcr.io/test/runner:gpu",
+        runner_image_cpu="ghcr.io/test/jobs-actions-runner:cpu",
+        runner_image_gpu="ghcr.io/test/jobs-actions-runner-gpu:gpu",
         default_timeout="1h",
         log_level="DEBUG",
     )
