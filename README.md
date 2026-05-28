@@ -15,7 +15,7 @@ GPU CI for the price of a Hub subscription. No self-hosted runner infrastructure
 
 ## Why you might use this
 
-Note that Jobs-Actions is in Beta, and could change. But the overlal motivation for this is that GitHub-hosted runners are becoming increasingly unreliable. HF Jobs instances are reliable and offer GPU machines at much more reasonable, per-minute prices. This bridges the GitHub and HF Jobs: GitHub Actions stays in charge of orchestration, YAML, secrets, and the Checks UI; HF Jobs provides the  compute.
+Note that Jobs-Actions is in Beta, and could change. But the overall motivation for this is that GitHub-hosted runners are becoming increasingly unreliable. HF Jobs instances are reliable and offer GPU machines at much more reasonable, per-minute prices. This bridges the GitHub and HF Jobs: GitHub Actions stays in charge of orchestration, YAML, secrets, and the Checks UI; HF Jobs provides the  compute.
 
 | | GitHub-hosted | jobs-actions (HF Jobs) | Self-hosted on EC2 |
 |---|---|---|---|
