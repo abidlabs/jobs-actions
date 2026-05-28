@@ -36,11 +36,6 @@ PR push
   → Runner exits after one job, container terminates
 ```
 
-Three pieces:
-
-- **`dispatcher/`** — FastAPI service that handles GitHub webhooks and dispatches HF Jobs. Deploys to an HF Space.
-- **`runner/`** — *Optional* prebuilt Docker images (CPU + GPU) with the GitHub Actions runner binary baked in. Out of the box the dispatcher uses `ubuntu:22.04` / `nvidia/cuda:...` + a runtime install, so you don't need to host an image to get started.
-- **`setup/`** — GitHub App manifest and setup walkthrough.
 
 ## Supported labels
 
@@ -62,25 +57,6 @@ Three pieces:
 | `hf-jobs-l40sx1` | `l40sx1` | 1× L40s |
 | `hf-jobs-h200` | `h200` | H200 GPU |
 
-## Setup
-
-See [`setup/SETUP.md`](setup/SETUP.md) for the one-time install. Roughly:
-
-1. Deploy the dispatcher to an HF Space.
-2. Create a GitHub App from the manifest in `setup/app-manifest.json`.
-3. Set the webhook URL to your Space + paste secrets into Space settings.
-4. Install the App on your repo.
-5. Change `runs-on:` in your workflow.
-
-## Status
-
-- ✅ End-to-end dispatcher implementation
-- ✅ Runner images (CPU + GPU)
-- ✅ Test coverage of dispatcher critical paths
-- ✅ One-click HF Space deploy
-- ✅ Setup walkthrough
-- ⏳ Pre-warmed runner pool (planned)
-- ⏳ Cost dashboard (planned)
 
 ## License
 
